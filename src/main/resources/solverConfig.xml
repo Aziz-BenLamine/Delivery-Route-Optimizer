@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<solver xmlns="https://www.optaplanner.org/xsd/solver" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://www.optaplanner.org/xsd/solver https://www.optaplanner.org/xsd/solver/solver.xsd">
+
+    <!-- Domain model configuration -->
+    <solutionClass>com.adcaisse.delivery_route_optimizer.model.VehicleRoutingSolution</solutionClass>
+    <entityClass>com.adcaisse.delivery_route_optimizer.model.Vehicle</entityClass>
+
+    <!-- Score configuration -->
+    <scoreDirectorFactory>
+        <constraintProviderClass>com.adcaisse.delivery_route_optimizer.solver.VehicleRoutingConstraintProvider</constraintProviderClass>
+    </scoreDirectorFactory>
+
+    <!-- Optimization algorithms configuration -->
+    <termination>
+        <secondsSpentLimit>5</secondsSpentLimit>
+    </termination>
+
+    <constructionHeuristic>
+        <!-- For list variables, don't specify constructionHeuristicType -->
+    </constructionHeuristic>
+
+    <localSearch>
+        <unionMoveSelector>
+            <listChangeMoveSelector/>
+            <listSwapMoveSelector/>
+            <subListChangeMoveSelector>
+                <selectReversingMoveToo>true</selectReversingMoveToo>
+            </subListChangeMoveSelector>
+            <subListSwapMoveSelector>
+                <selectReversingMoveToo>true</selectReversingMoveToo>
+            </subListSwapMoveSelector>
+        </unionMoveSelector>
+        <acceptor>
+            <entityTabuSize>7</entityTabuSize>
+        </acceptor>
+        <forager>
+            <acceptedCountLimit>1000</acceptedCountLimit>
+        </forager>
+    </localSearch>
+</solver>

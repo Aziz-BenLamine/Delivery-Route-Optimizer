@@ -1,6 +1,10 @@
 package com.adcaisse.delivery_route_optimizer.model;
 
+import org.optaplanner.core.api.domain.lookup.PlanningId;
+
 public class Location {
+    
+    @PlanningId
     private long id;
     private double latitude;
     private double longitude;
