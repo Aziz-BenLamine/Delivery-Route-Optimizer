@@ -4,22 +4,23 @@ package com.adcaisse.delivery_route_optimizer.client;
 import com.adcaisse.delivery_route_optimizer.model.Location;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
+@Component
 public class GraphHopperClient {
 
     private final String graphHopperUrl;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    public GraphHopperClient(String graphHopperUrl) {
+    public GraphHopperClient(@Value("${graphhopper.url}") String graphHopperUrl) {
         this.graphHopperUrl = graphHopperUrl;
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
@@ -51,8 +52,12 @@ public class GraphHopperClient {
 
     /**
      * Get distance in meters between two locations using GET /route
+     * @param from Source location
+     * @param to Destination location
+     * @return Distance in meters
+     * @throws Exception if the API call fails
      */
-    private long getDistance(Location from, Location to) throws Exception {
+    public long getDistance(Location from, Location to) throws Exception {
         String url = String.format("%s/route?point=%f,%f&point=%f,%f&profile=car",
                 graphHopperUrl,
                 from.getLatitude(), from.getLongitude(),

@@ -6,12 +6,16 @@ import org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore;
 import org.optaplanner.core.api.score.stream.Constraint;
 import org.optaplanner.core.api.score.stream.ConstraintFactory;
 import org.optaplanner.core.api.score.stream.ConstraintProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Constraint provider for Vehicle Routing Problem.
  * Defines both hard constraints (must be satisfied) and soft constraints (should be minimized).
  */
 public class VehicleRoutingConstraintProvider implements ConstraintProvider {
+
+    private static final Logger logger = LoggerFactory.getLogger(VehicleRoutingConstraintProvider.class);
 
     @Override
     public Constraint[] defineConstraints(ConstraintFactory constraintFactory) {
@@ -36,8 +40,8 @@ public class VehicleRoutingConstraintProvider implements ConstraintProvider {
                     int capacity = vehicle.getCapacity();
                     boolean exceeds = totalDemand > capacity;
                     if (exceeds) {
-                        System.out.println("Vehicle " + vehicle.getId() + " exceeds capacity: " + 
-                            totalDemand + " > " + capacity + " (excess: " + (totalDemand - capacity) + ")");
+                        logger.debug("Vehicle {} exceeds capacity: {} > {} (excess: {})", 
+                                vehicle.getId(), totalDemand, capacity, (totalDemand - capacity));
                     }
                     return exceeds;
                 })

@@ -1,5 +1,8 @@
 package com.adcaisse.delivery_route_optimizer.service;
 
+import com.adcaisse.delivery_route_optimizer.dto.CustomerStopDto;
+import com.adcaisse.delivery_route_optimizer.dto.VehicleRouteDto;
+import com.adcaisse.delivery_route_optimizer.dto.VehicleRoutingSolutionDto;
 import com.adcaisse.delivery_route_optimizer.model.Customer;
 import com.adcaisse.delivery_route_optimizer.model.Location;
 import com.adcaisse.delivery_route_optimizer.model.Vehicle;
@@ -29,7 +32,6 @@ public class VehicleRoutingService {
     }
 
     private void initializeSolver() {
-        // Load solver configuration from XML
         this.solverFactory = SolverFactory.createFromXmlResource("solverConfig.xml");
     }
 
@@ -126,34 +128,34 @@ public class VehicleRoutingService {
     }
 
     /**
-     * Get a summary of the solution for API responses
+     * Get a DTO representation of the solution for API responses
      */
-    public VehicleRoutingSolutionSummary getSolutionSummary(VehicleRoutingSolution solution) {
-        VehicleRoutingSolutionSummary summary = new VehicleRoutingSolutionSummary();
-        summary.setScore(solution.getScore());
-        summary.setTotalDistance(solution.getTotalDistance());
-        summary.setTotalCustomers(solution.getTotalCustomers());
-        summary.setFeasible(solution.isFeasible());
+    public VehicleRoutingSolutionDto getSolutionDto(VehicleRoutingSolution solution) {
+        VehicleRoutingSolutionDto dto = new VehicleRoutingSolutionDto();
+        dto.setScore(solution.getScore());
+        dto.setTotalDistance(solution.getTotalDistance());
+        dto.setTotalCustomers(solution.getTotalCustomers());
+        dto.setFeasible(solution.isFeasible());
         
-        List<VehicleRouteSummary> routes = solution.getVehicleList().stream()
+        List<VehicleRouteDto> routes = solution.getVehicleList().stream()
                 .filter(vehicle -> !vehicle.getCustomerList().isEmpty())
-                .map(this::createVehicleRouteSummary)
+                .map(this::createVehicleRouteDto)
                 .collect(Collectors.toList());
         
-        summary.setRoutes(routes);
-        return summary;
+        dto.setRoutes(routes);
+        return dto;
     }
 
-    private VehicleRouteSummary createVehicleRouteSummary(Vehicle vehicle) {
-        VehicleRouteSummary routeSummary = new VehicleRouteSummary();
-        routeSummary.setVehicleId(vehicle.getId());
-        routeSummary.setVehicleName(vehicle.getName());
-        routeSummary.setCapacity(vehicle.getCapacity());
-        routeSummary.setTotalDemand(vehicle.getTotalDemand());
-        routeSummary.setDistance(vehicle.getTotalDistance(distanceCalculator));
+    private VehicleRouteDto createVehicleRouteDto(Vehicle vehicle) {
+        VehicleRouteDto routeDto = new VehicleRouteDto();
+        routeDto.setVehicleId(vehicle.getId());
+        routeDto.setVehicleName(vehicle.getName());
+        routeDto.setCapacity(vehicle.getCapacity());
+        routeDto.setTotalDemand(vehicle.getTotalDemand());
+        routeDto.setDistance(vehicle.getTotalDistance(distanceCalculator));
         
-        List<CustomerStop> stops = vehicle.getCustomerList().stream()
-                .map(customer -> new CustomerStop(
+        List<CustomerStopDto> stops = vehicle.getCustomerList().stream()
+                .map(customer -> new CustomerStopDto(
                         customer.getId(),
                         customer.getName(),
                         customer.getLocation(),
@@ -161,162 +163,7 @@ public class VehicleRoutingService {
                 ))
                 .collect(Collectors.toList());
         
-        routeSummary.setStops(stops);
-        return routeSummary;
-    }
-
-    // Inner classes for API responses
-    public static class VehicleRoutingSolutionSummary {
-        private org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore score;
-        private long totalDistance;
-        private int totalCustomers;
-        private boolean feasible;
-        private List<VehicleRouteSummary> routes;
-
-        // Getters and setters
-        public org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore getScore() {
-            return score;
-        }
-
-        public void setScore(org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore score) {
-            this.score = score;
-        }
-
-        public long getTotalDistance() {
-            return totalDistance;
-        }
-
-        public void setTotalDistance(long totalDistance) {
-            this.totalDistance = totalDistance;
-        }
-
-        public int getTotalCustomers() {
-            return totalCustomers;
-        }
-
-        public void setTotalCustomers(int totalCustomers) {
-            this.totalCustomers = totalCustomers;
-        }
-
-        public boolean isFeasible() {
-            return feasible;
-        }
-
-        public void setFeasible(boolean feasible) {
-            this.feasible = feasible;
-        }
-
-        public List<VehicleRouteSummary> getRoutes() {
-            return routes;
-        }
-
-        public void setRoutes(List<VehicleRouteSummary> routes) {
-            this.routes = routes;
-        }
-    }
-
-    public static class VehicleRouteSummary {
-        private Long vehicleId;
-        private String vehicleName;
-        private int capacity;
-        private int totalDemand;
-        private long distance;
-        private List<CustomerStop> stops;
-
-        // Getters and setters
-        public Long getVehicleId() {
-            return vehicleId;
-        }
-
-        public void setVehicleId(Long vehicleId) {
-            this.vehicleId = vehicleId;
-        }
-
-        public String getVehicleName() {
-            return vehicleName;
-        }
-
-        public void setVehicleName(String vehicleName) {
-            this.vehicleName = vehicleName;
-        }
-
-        public int getCapacity() {
-            return capacity;
-        }
-
-        public void setCapacity(int capacity) {
-            this.capacity = capacity;
-        }
-
-        public int getTotalDemand() {
-            return totalDemand;
-        }
-
-        public void setTotalDemand(int totalDemand) {
-            this.totalDemand = totalDemand;
-        }
-
-        public long getDistance() {
-            return distance;
-        }
-
-        public void setDistance(long distance) {
-            this.distance = distance;
-        }
-
-        public List<CustomerStop> getStops() {
-            return stops;
-        }
-
-        public void setStops(List<CustomerStop> stops) {
-            this.stops = stops;
-        }
-    }
-
-    public static class CustomerStop {
-        private Long customerId;
-        private String customerName;
-        private Location location;
-        private int demand;
-
-        public CustomerStop(Long customerId, String customerName, Location location, int demand) {
-            this.customerId = customerId;
-            this.customerName = customerName;
-            this.location = location;
-            this.demand = demand;
-        }
-
-        // Getters and setters
-        public Long getCustomerId() {
-            return customerId;
-        }
-
-        public void setCustomerId(Long customerId) {
-            this.customerId = customerId;
-        }
-
-        public String getCustomerName() {
-            return customerName;
-        }
-
-        public void setCustomerName(String customerName) {
-            this.customerName = customerName;
-        }
-
-        public Location getLocation() {
-            return location;
-        }
-
-        public void setLocation(Location location) {
-            this.location = location;
-        }
-
-        public int getDemand() {
-            return demand;
-        }
-
-        public void setDemand(int demand) {
-            this.demand = demand;
-        }
+        routeDto.setStops(stops);
+        return routeDto;
     }
 }

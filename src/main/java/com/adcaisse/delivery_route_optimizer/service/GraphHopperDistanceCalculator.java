@@ -3,6 +3,8 @@ package com.adcaisse.delivery_route_optimizer.service;
 import com.adcaisse.delivery_route_optimizer.client.GraphHopperClient;
 import com.adcaisse.delivery_route_optimizer.model.DistanceCalculator;
 import com.adcaisse.delivery_route_optimizer.model.Location;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,11 +16,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class GraphHopperDistanceCalculator implements DistanceCalculator {
     
+    private static final Logger logger = LoggerFactory.getLogger(GraphHopperDistanceCalculator.class);
+    
     private final GraphHopperClient graphHopperClient;
     private final ConcurrentHashMap<String, Long> distanceCache;
     
-    public GraphHopperDistanceCalculator() {
-        this.graphHopperClient = new GraphHopperClient("http://localhost:8989");
+    public GraphHopperDistanceCalculator(GraphHopperClient graphHopperClient) {
+        this.graphHopperClient = graphHopperClient;
         this.distanceCache = new ConcurrentHashMap<>();
     }
     
@@ -47,21 +51,14 @@ public class GraphHopperDistanceCalculator implements DistanceCalculator {
             return distance;
         } catch (Exception e) {
             // Fallback to Euclidean distance if GraphHopper is unavailable
-            System.err.println("GraphHopper unavailable, using Euclidean distance: " + e.getMessage());
+            logger.warn("GraphHopper unavailable for distance calculation from {} to {}, using Euclidean distance: {}", 
+                    from.getId(), to.getId(), e.getMessage());
             return calculateEuclideanDistance(from, to);
         }
     }
     
     private long calculateDistanceViaGraphHopper(Location from, Location to) throws Exception {
-        try {
-            // Use reflection to access private getDistance method from GraphHopperClient
-            var method = graphHopperClient.getClass().getDeclaredMethod("getDistance", Location.class, Location.class);
-            method.setAccessible(true);
-            return (Long) method.invoke(graphHopperClient, from, to);
-        } catch (Exception e) {
-            // If reflection fails, fall back to Euclidean distance
-            return calculateEuclideanDistance(from, to);
-        }
+        return graphHopperClient.getDistance(from, to);
     }
     
     private long calculateEuclideanDistance(Location from, Location to) {
@@ -99,9 +96,10 @@ public class GraphHopperDistanceCalculator implements DistanceCalculator {
                 }
             }
             
-            System.out.println("Preloaded distance matrix for " + locations.size() + " locations");
+            logger.info("Preloaded distance matrix for {} locations ({} cache entries)", 
+                    locations.size(), distanceCache.size());
         } catch (Exception e) {
-            System.err.println("Failed to preload distance matrix: " + e.getMessage());
+            logger.error("Failed to preload distance matrix: {}", e.getMessage(), e);
         }
     }
     

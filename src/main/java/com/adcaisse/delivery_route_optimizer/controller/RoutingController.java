@@ -1,6 +1,9 @@
 package com.adcaisse.delivery_route_optimizer.controller;
 
 import com.adcaisse.delivery_route_optimizer.client.GraphHopperClient;
+import com.adcaisse.delivery_route_optimizer.dto.RouteRequest;
+import com.adcaisse.delivery_route_optimizer.dto.VehicleRoutingRequest;
+import com.adcaisse.delivery_route_optimizer.dto.VehicleRoutingSolutionDto;
 import com.adcaisse.delivery_route_optimizer.model.Location;
 import com.adcaisse.delivery_route_optimizer.model.VehicleRoutingSolution;
 import com.adcaisse.delivery_route_optimizer.service.VehicleRoutingService;
@@ -18,9 +21,10 @@ public class RoutingController {
     private final VehicleRoutingService vehicleRoutingService;
 
     @Autowired
-    public RoutingController(VehicleRoutingService vehicleRoutingService) {
-        this.graphHopperClient = new GraphHopperClient("http://localhost:8989");
+    public RoutingController(VehicleRoutingService vehicleRoutingService,
+                            GraphHopperClient graphHopperClient) {
         this.vehicleRoutingService = vehicleRoutingService;
+        this.graphHopperClient = graphHopperClient;
     }
 
     @PostMapping("/matrix")
@@ -32,7 +36,7 @@ public class RoutingController {
      * Solve Vehicle Routing Problem
      */
     @PostMapping("/optimize")
-    public ResponseEntity<VehicleRoutingService.VehicleRoutingSolutionSummary> optimizeRoutes(
+    public ResponseEntity<VehicleRoutingSolutionDto> optimizeRoutes(
             @RequestBody VehicleRoutingRequest request) {
         
         try {
@@ -43,10 +47,10 @@ public class RoutingController {
                 request.getCustomerDemands()
             );
             
-            VehicleRoutingService.VehicleRoutingSolutionSummary summary = 
-                vehicleRoutingService.getSolutionSummary(solution);
+            VehicleRoutingSolutionDto dto = 
+                vehicleRoutingService.getSolutionDto(solution);
             
-            return ResponseEntity.ok(summary);
+            return ResponseEntity.ok(dto);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
@@ -56,13 +60,13 @@ public class RoutingController {
      * Test endpoint with sample data
      */
     @GetMapping("/optimize/sample")
-    public ResponseEntity<VehicleRoutingService.VehicleRoutingSolutionSummary> optimizeSampleRoutes() {
+    public ResponseEntity<VehicleRoutingSolutionDto> optimizeSampleRoutes() {
         try {
             VehicleRoutingSolution solution = vehicleRoutingService.solveSampleProblem();
-            VehicleRoutingService.VehicleRoutingSolutionSummary summary = 
-                vehicleRoutingService.getSolutionSummary(solution);
+            VehicleRoutingSolutionDto dto = 
+                vehicleRoutingService.getSolutionDto(solution);
             
-            return ResponseEntity.ok(summary);
+            return ResponseEntity.ok(dto);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -78,69 +82,6 @@ public class RoutingController {
             return ResponseEntity.ok(polyline);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error getting route: " + e.getMessage());
-        }
-    }
-
-    // Request/Response DTOs
-    public static class VehicleRoutingRequest {
-        private Location depot;
-        private List<Location> customerLocations;
-        private List<Integer> vehicleCapacities;
-        private List<Integer> customerDemands;
-
-        // Getters and setters
-        public Location getDepot() {
-            return depot;
-        }
-
-        public void setDepot(Location depot) {
-            this.depot = depot;
-        }
-
-        public List<Location> getCustomerLocations() {
-            return customerLocations;
-        }
-
-        public void setCustomerLocations(List<Location> customerLocations) {
-            this.customerLocations = customerLocations;
-        }
-
-        public List<Integer> getVehicleCapacities() {
-            return vehicleCapacities;
-        }
-
-        public void setVehicleCapacities(List<Integer> vehicleCapacities) {
-            this.vehicleCapacities = vehicleCapacities;
-        }
-
-        public List<Integer> getCustomerDemands() {
-            return customerDemands;
-        }
-
-        public void setCustomerDemands(List<Integer> customerDemands) {
-            this.customerDemands = customerDemands;
-        }
-    }
-
-    public static class RouteRequest {
-        private Location from;
-        private Location to;
-
-        // Getters and setters
-        public Location getFrom() {
-            return from;
-        }
-
-        public void setFrom(Location from) {
-            this.from = from;
-        }
-
-        public Location getTo() {
-            return to;
-        }
-
-        public void setTo(Location to) {
-            this.to = to;
         }
     }
 }

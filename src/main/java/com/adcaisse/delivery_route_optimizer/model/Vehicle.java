@@ -6,17 +6,13 @@ import org.optaplanner.core.api.domain.variable.PlanningListVariable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Planning Entity representing a Vehicle with a list of customers to visit.
- * Uses the Planning List Variable approach which is simpler than chained variables.
- */
 @PlanningEntity
 public class Vehicle {
     
     private Long id;
     private String name;
-    private int capacity; // Maximum capacity in kg or number of packages
-    private Location depot; // Starting and ending location
+    private int capacity;
+    private Location depot;
     
     @PlanningListVariable(valueRangeProviderRefs = {"customerRange"})
     private List<Customer> customerList;
@@ -33,7 +29,6 @@ public class Vehicle {
         this.customerList = new ArrayList<>();
     }
     
-    // Getters and setters
     public Long getId() {
         return id;
     }
@@ -74,7 +69,6 @@ public class Vehicle {
         this.customerList = customerList;
     }
     
-    // Helper methods for distance calculation
     public long getTotalDistance(DistanceCalculator distanceCalculator) {
         if (customerList.isEmpty()) {
             return 0;
@@ -88,7 +82,6 @@ public class Vehicle {
             previousLocation = customer.getLocation();
         }
         
-        // Return to depot
         totalDistance += distanceCalculator.getDistance(previousLocation, depot);
         return totalDistance;
     }
