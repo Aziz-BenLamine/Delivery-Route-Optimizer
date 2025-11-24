@@ -27,7 +27,6 @@ public class GraphHopperClient {
     }
 
     /**
-     * Get distance matrix for a list of locations
      * @param locations List of delivery locations and driver starting points
      * @return distance matrix in meters
      * @throws Exception
@@ -36,18 +35,26 @@ public class GraphHopperClient {
         int n = locations.size();
         long[][] distanceMatrix = new long[n][n];
 
+        // Calculate upper triangle only (i < j) and mirror to lower triangle
         for (int i = 0; i < n; i++) {
-            Location from = locations.get(i);
-            for (int j = 0; j < n; j++) {
-                if (i == j) {
-                    distanceMatrix[i][j] = 0;
-                }else{
-                    Location to = locations.get(j);
-                    distanceMatrix[i][j] = getDistance(from, to);
-                }
+            // Diagonal: distance from location to itself is always 0
+            distanceMatrix[i][i] = 0;
+            
+            // Upper triangle: only calculate for j > i
+            for (int j = i + 1; j < n; j++) {
+                Location from = locations.get(i);
+                Location to = locations.get(j);
+                
+                // Single API call for this pair
+                long distance = getDistance(from, to);
+                
+                // Store in both positions (symmetric matrix)
+                distanceMatrix[i][j] = distance;
+                distanceMatrix[j][i] = distance;  // Mirror
             }
         }
-        return  distanceMatrix;
+        
+        return distanceMatrix;
     }
 
     /**

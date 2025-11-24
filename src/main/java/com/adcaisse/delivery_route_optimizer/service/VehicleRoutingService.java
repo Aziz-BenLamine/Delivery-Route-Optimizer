@@ -25,7 +25,6 @@ public class VehicleRoutingService {
     private final GraphHopperDistanceCalculator distanceCalculator;
     private SolverFactory<VehicleRoutingSolution> solverFactory;
 
-    @Autowired
     public VehicleRoutingService(GraphHopperDistanceCalculator distanceCalculator) {
         this.distanceCalculator = distanceCalculator;
         this.initializeSolver();
