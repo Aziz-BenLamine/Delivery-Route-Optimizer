@@ -6,7 +6,7 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.5.7</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
 	<groupId>com.adcaisse</groupId>
 	<artifactId>delivery-route-optimizer</artifactId>
@@ -51,11 +51,6 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
-        <!-- Jackson for JSON processing - Spring Boot already includes this -->
-        <!-- Removed incorrect dependency: tools.jackson.core (should be com.fasterxml.jackson.core) -->
-        <!-- Spring Boot starter-web already includes Jackson -->
-
         <dependency>
             <groupId>org.optaplanner</groupId>
             <artifactId>optaplanner-core</artifactId>
