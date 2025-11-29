@@ -4,10 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Represents a customer that needs to be visited for delivery.
- * This is a problem fact in OptaPlanner terminology.
- */
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,13 +1,12 @@
 package com.adcaisse.delivery_route_optimizer.dto;
 
 import com.adcaisse.delivery_route_optimizer.model.Location;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * DTO representing a customer stop in a vehicle route
- */
+@Schema(description = "A customer stop in a vehicle's route")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -7,11 +7,15 @@ import com.adcaisse.delivery_route_optimizer.dto.VehicleRoutingSolutionDto;
 import com.adcaisse.delivery_route_optimizer.model.Location;
 import com.adcaisse.delivery_route_optimizer.model.VehicleRoutingSolution;
 import com.adcaisse.delivery_route_optimizer.service.VehicleRoutingService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Route Optimization", description = "APIs for optimizing delivery routes and retrieving routing information")
 @RestController
 @RequestMapping("/api/routing")
 public class RoutingController {
@@ -30,9 +34,8 @@ public class RoutingController {
         return graphHopperClient.getDistanceMatrix(locations);
     }
 
-    /**
-     * Solve Vehicle Routing Problem
-     */
+    @Operation(summary = "Optimize delivery routes",
+               description = "Optimize delivery routes based on depot, customer locations, vehicle capacities, and customer demands.")
     @PostMapping("/optimize")
     public ResponseEntity<VehicleRoutingSolutionDto> optimizeRoutes(
             @RequestBody VehicleRoutingRequest request) {
@@ -54,9 +57,11 @@ public class RoutingController {
         }
     }
 
-    /**
-     * Test endpoint with sample data
-     */
+    @Operation(
+            summary = "Test with sample data",
+            description = "Runs route optimization with predefined sample data (Tunisia locations). " +
+                    "Useful for testing the API without providing custom data."
+    )
     @GetMapping("/optimize/sample")
     public ResponseEntity<VehicleRoutingSolutionDto> optimizeSampleRoutes() {
         try {
@@ -70,9 +75,11 @@ public class RoutingController {
         }
     }
 
-    /**
-     * Get route polyline between two points
-     */
+    @Operation(
+            summary = "Get route polyline",
+            description = "Returns an encoded polyline string representing the route between two points. " +
+                    "Can be used for map visualization."
+    )
     @PostMapping("/polyline")
     public ResponseEntity<String> getRoutePolyline(@RequestBody RouteRequest request) {
         try {

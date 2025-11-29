@@ -149,51 +149,9 @@ public class GraphHopperClient {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         JsonNode jsonNode = objectMapper.readTree(response.body());
-        
-        // Check for errors in response
-        JsonNode pathsNode = jsonNode.get("paths");
-        if (pathsNode == null || pathsNode.isEmpty()) {
-            // GraphHopper couldn't find a route - check for error message
-            JsonNode messageNode = jsonNode.get("message");
-            String errorMsg = messageNode != null ? messageNode.asText() : "No route found";
-            
-            logger.warn("GraphHopper couldn't find route from ({}, {}) to ({}, {}): {}",
-                    from.getLatitude(), from.getLongitude(),
-                    to.getLatitude(), to.getLongitude(), errorMsg);
-            
-            // Fall back to Haversine distance (straight-line) as estimate
-            long fallbackDistance = calculateHaversineDistance(from, to);
-            logger.debug("Using Haversine fallback distance: {} meters", fallbackDistance);
-            return fallbackDistance;
-        }
-        
-        JsonNode path = pathsNode.get(0);
-        return path.get("distance").asLong();
-    }
+        JsonNode path = jsonNode.get("paths").get(0);
 
-    /**
-     * Calculate straight-line (Haversine) distance between two points.
-     * Used as fallback when GraphHopper can't find a route.
-     * 
-     * @param from Source location
-     * @param to Destination location
-     * @return Distance in meters
-     */
-    private long calculateHaversineDistance(Location from, Location to) {
-        final int EARTH_RADIUS_METERS = 6_371_000; // Earth's radius in meters
-        
-        double lat1 = Math.toRadians(from.getLatitude());
-        double lat2 = Math.toRadians(to.getLatitude());
-        double deltaLat = Math.toRadians(to.getLatitude() - from.getLatitude());
-        double deltaLon = Math.toRadians(to.getLongitude() - from.getLongitude());
-        
-        double a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-                   Math.cos(lat1) * Math.cos(lat2) *
-                   Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        
-        // Multiply by 1.3 to approximate road distance (roads are rarely straight)
-        return (long) (EARTH_RADIUS_METERS * c * 1.3);
+        return path.get("distance").asLong();
     }
 
     public String getRoutePolyline(Location from, Location to) throws Exception {
@@ -210,15 +168,8 @@ public class GraphHopperClient {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         JsonNode jsonNode = objectMapper.readTree(response.body());
-        JsonNode pathsNode = jsonNode.get("paths");
-        
-        if (pathsNode == null || pathsNode.isEmpty()) {
-            JsonNode messageNode = jsonNode.get("message");
-            String errorMsg = messageNode != null ? messageNode.asText() : "No route found";
-            throw new Exception("GraphHopper couldn't find route: " + errorMsg);
-        }
-        
-        JsonNode path = pathsNode.get(0);
+        JsonNode path = jsonNode.get("paths").get(0);
+
         return path.get("points").asText(); // encoded polyline
     }
 }
