@@ -7,7 +7,6 @@ import com.adcaisse.delivery_route_optimizer.dto.VehicleRoutingSolutionDto;
 import com.adcaisse.delivery_route_optimizer.model.Location;
 import com.adcaisse.delivery_route_optimizer.model.VehicleRoutingSolution;
 import com.adcaisse.delivery_route_optimizer.service.VehicleRoutingService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +19,6 @@ public class RoutingController {
     private final GraphHopperClient graphHopperClient;
     private final VehicleRoutingService vehicleRoutingService;
 
-    @Autowired
     public RoutingController(VehicleRoutingService vehicleRoutingService,
                             GraphHopperClient graphHopperClient) {
         this.vehicleRoutingService = vehicleRoutingService;

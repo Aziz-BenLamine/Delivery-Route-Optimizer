@@ -1,6 +1,8 @@
 package com.adcaisse.delivery_route_optimizer.solver;
 
 import com.adcaisse.delivery_route_optimizer.model.Customer;
+import com.adcaisse.delivery_route_optimizer.model.DistanceMatrix;
+import com.adcaisse.delivery_route_optimizer.model.Location;
 import com.adcaisse.delivery_route_optimizer.model.Vehicle;
 import org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore;
 import org.optaplanner.core.api.score.stream.Constraint;
@@ -12,6 +14,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Constraint provider for Vehicle Routing Problem.
  * Defines both hard constraints (must be satisfied) and soft constraints (should be minimized).
+ * 
+ * Uses pre-computed GraphHopper distances from DistanceMatrix for accurate route optimization.
  */
 public class VehicleRoutingConstraintProvider implements ConstraintProvider {
 
@@ -31,7 +35,6 @@ public class VehicleRoutingConstraintProvider implements ConstraintProvider {
 
     /**
      * Hard constraint: Vehicle capacity must not be exceeded
-     * This constraint penalizes any vehicle that has more total demand than capacity
      */
     private Constraint vehicleCapacityConstraint(ConstraintFactory constraintFactory) {
         return constraintFactory.forEach(Vehicle.class)
@@ -51,14 +54,14 @@ public class VehicleRoutingConstraintProvider implements ConstraintProvider {
     }
 
     /**
-     * Soft constraint: Minimize total travel distance
-     * Uses the actual DistanceCalculator from the solution (which uses GraphHopper)
+     * Soft constraint: Minimize total travel distance.
+     * Uses pre-computed GraphHopper distances from DistanceMatrix for accurate optimization.
      */
     private Constraint minimizeTotalDistanceConstraint(ConstraintFactory constraintFactory) {
         return constraintFactory.forEach(Vehicle.class)
                 .filter(vehicle -> !vehicle.getCustomerList().isEmpty())
                 .penalizeLong(HardSoftLongScore.ONE_SOFT,
-                        vehicle -> calculateVehicleTotalDistance(vehicle))
+                        (vehicle) -> calculateVehicleTotalDistance(vehicle))
                 .asConstraint("Minimize total distance");
     }
 
@@ -68,66 +71,63 @@ public class VehicleRoutingConstraintProvider implements ConstraintProvider {
     private Constraint minimizeVehicleUsageConstraint(ConstraintFactory constraintFactory) {
         return constraintFactory.forEach(Vehicle.class)
                 .filter(vehicle -> !vehicle.getCustomerList().isEmpty())
-                .penalizeLong(HardSoftLongScore.ONE_SOFT, vehicle -> 1000000L) // Large penalty per vehicle
+                .penalizeLong(HardSoftLongScore.ONE_SOFT, vehicle -> 1000000L)
                 .asConstraint("Minimize vehicle usage");
     }
 
     /**
-     * Calculate total distance for a vehicle's route (depot -> customers -> depot).
-     * Uses Haversine formula for fast constraint evaluation during optimization.
+     * Calculate total distance for a vehicle's route using pre-computed GraphHopper distances.
+     * Accesses the DistanceMatrix via a static holder (set before solving).
      */
     private long calculateVehicleTotalDistance(Vehicle vehicle) {
         if (vehicle.getCustomerList().isEmpty()) {
             return 0;
         }
         
-        // Use the Vehicle's getTotalDistance method with a simple fallback calculator
-        // The actual distance calculator is injected into the solution at runtime
-        try {
-            // Calculate using haversine formula as fallback for constraint checking
-            // The actual solution score will use GraphHopper distances
-            long totalDistance = 0;
-            
-            // Distance from depot to first customer
-            Customer firstCustomer = vehicle.getCustomerList().get(0);
-            totalDistance += calculateHaversineDistance(vehicle.getDepot(), firstCustomer.getLocation());
-
-            // Distance between customers
-            for (int i = 0; i < vehicle.getCustomerList().size() - 1; i++) {
-                Customer from = vehicle.getCustomerList().get(i);
-                Customer to = vehicle.getCustomerList().get(i + 1);
-                totalDistance += calculateHaversineDistance(from.getLocation(), to.getLocation());
-            }
-
-            // Distance from last customer back to depot
-            Customer lastCustomer = vehicle.getCustomerList().get(vehicle.getCustomerList().size() - 1);
-            totalDistance += calculateHaversineDistance(lastCustomer.getLocation(), vehicle.getDepot());
-
-            return totalDistance;
-        } catch (Exception e) {
-            logger.warn("Error calculating vehicle distance: {}", e.getMessage());
+        DistanceMatrix matrix = DistanceMatrixHolder.getCurrentMatrix();
+        if (matrix == null) {
+            logger.warn("DistanceMatrix not available, returning 0 for vehicle {}", vehicle.getId());
             return 0;
         }
-    }
+        
+        long totalDistance = 0;
+        Location depot = vehicle.getDepot();
+        
+        // Distance from depot to first customer
+        Customer firstCustomer = vehicle.getCustomerList().get(0);
+        totalDistance += matrix.getDistance(depot, firstCustomer.getLocation());
 
+        // Distance between consecutive customers
+        for (int i = 0; i < vehicle.getCustomerList().size() - 1; i++) {
+            Location from = vehicle.getCustomerList().get(i).getLocation();
+            Location to = vehicle.getCustomerList().get(i + 1).getLocation();
+            totalDistance += matrix.getDistance(from, to);
+        }
+
+        // Distance from last customer back to depot
+        Customer lastCustomer = vehicle.getCustomerList().get(vehicle.getCustomerList().size() - 1);
+        totalDistance += matrix.getDistance(lastCustomer.getLocation(), depot);
+
+        return totalDistance;
+    }
+    
     /**
-     * Calculate distance using Haversine formula (Great Circle distance).
-     * This is used during constraint evaluation for performance.
-     * The final solution uses GraphHopper's actual road distances.
+     * Static holder for the current DistanceMatrix.
+     * Set before solving, used during constraint evaluation.
      */
-    private long calculateHaversineDistance(com.adcaisse.delivery_route_optimizer.model.Location from, 
-                                           com.adcaisse.delivery_route_optimizer.model.Location to) {
-        double deltaLat = Math.toRadians(to.getLatitude() - from.getLatitude());
-        double deltaLon = Math.toRadians(to.getLongitude() - from.getLongitude());
+    public static class DistanceMatrixHolder {
+        private static final ThreadLocal<DistanceMatrix> currentMatrix = new ThreadLocal<>();
         
-        double a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-                Math.cos(Math.toRadians(from.getLatitude())) * 
-                Math.cos(Math.toRadians(to.getLatitude())) *
-                Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
+        public static void setCurrentMatrix(DistanceMatrix matrix) {
+            currentMatrix.set(matrix);
+        }
         
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        double earthRadius = 6371000; // Earth radius in meters
+        public static DistanceMatrix getCurrentMatrix() {
+            return currentMatrix.get();
+        }
         
-        return (long) (earthRadius * c);
+        public static void clear() {
+            currentMatrix.remove();
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.adcaisse.delivery_route_optimizer.model;
 
+import com.adcaisse.delivery_route_optimizer.service.DistanceCalculatorService;
 import org.optaplanner.core.api.domain.entity.PlanningEntity;
 import org.optaplanner.core.api.domain.variable.PlanningListVariable;
 
@@ -69,7 +70,7 @@ public class Vehicle {
         this.customerList = customerList;
     }
     
-    public long getTotalDistance(DistanceCalculator distanceCalculator) {
+    public long getTotalDistance(DistanceCalculatorService distanceCalculator) {
         if (customerList.isEmpty()) {
             return 0;
         }

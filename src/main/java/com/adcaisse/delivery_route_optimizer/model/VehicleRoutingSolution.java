@@ -1,9 +1,11 @@
 package com.adcaisse.delivery_route_optimizer.model;
 
+import com.adcaisse.delivery_route_optimizer.service.DistanceCalculatorService;
 import org.optaplanner.core.api.domain.solution.PlanningEntityCollectionProperty;
 import org.optaplanner.core.api.domain.solution.PlanningScore;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
 import org.optaplanner.core.api.domain.solution.ProblemFactCollectionProperty;
+import org.optaplanner.core.api.domain.solution.ProblemFactProperty;
 import org.optaplanner.core.api.domain.valuerange.ValueRangeProvider;
 import org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore;
 
@@ -28,7 +30,14 @@ public class VehicleRoutingSolution {
     @PlanningScore
     private HardSoftLongScore score;
     
-    private DistanceCalculator distanceCalculator;
+    private DistanceCalculatorService distanceCalculator;
+    
+    /**
+     * Pre-computed distance matrix for O(1) lookups during constraint evaluation.
+     * This is populated with GraphHopper distances before solving.
+     */
+    @ProblemFactProperty
+    private DistanceMatrix distanceMatrix;
     
     public VehicleRoutingSolution() {
     }
@@ -73,14 +82,22 @@ public class VehicleRoutingSolution {
         this.score = score;
     }
     
-    public DistanceCalculator getDistanceCalculator() {
+    public DistanceCalculatorService getDistanceCalculator() {
         return distanceCalculator;
     }
     
-    public void setDistanceCalculator(DistanceCalculator distanceCalculator) {
+    public void setDistanceCalculator(DistanceCalculatorService distanceCalculator) {
         this.distanceCalculator = distanceCalculator;
     }
     
+    public DistanceMatrix getDistanceMatrix() {
+        return distanceMatrix;
+    }
+    
+    public void setDistanceMatrix(DistanceMatrix distanceMatrix) {
+        this.distanceMatrix = distanceMatrix;
+    }
+
     // Helper methods for analysis
     public long getTotalDistance() {
         if (distanceCalculator == null) {
